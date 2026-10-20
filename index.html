@@ -9,64 +9,85 @@
   :root {
     --bg: #f4f6f9; --card: #ffffff; --ink: #1f2933; --sub: #616e7c; --line: #d9dee5;
     --accent: #0b63c5; --accent-ink: #ffffff; --ok: #1e7b3c; --warn: #9a5b00; --err: #b42318;
+    --track: #e4e8ee; --shade: rgba(15, 23, 42, .45);
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #14181d; --card: #1d232b; --ink: #e6e9ed; --sub: #9aa5b1; --line: #33404d;
-      --accent: #4c9bf0; --accent-ink: #0b1220; --ok: #5cc27e; --warn: #e3a83c; --err: #f07167; }
+      --accent: #4c9bf0; --accent-ink: #0b1220; --ok: #5cc27e; --warn: #e3a83c; --err: #f07167;
+      --track: #2b3440; --shade: rgba(0, 0, 0, .6); }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
     font: 16px/1.6 system-ui, "Noto Sans JP", sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); }
+  header .in { max-width: 760px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.2rem; margin: 0; }
+  .icon-btn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
+  .icon-btn svg { width: 24px; height: 24px; }
   main { max-width: 760px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 1.35rem; margin: 4px 0 16px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   button, .btn { appearance: none; border: 1px solid var(--line); background: var(--card); color: var(--ink);
-    border-radius: 10px; padding: 12px 16px; font-size: 1rem; cursor: pointer; }
+    border-radius: 10px; padding: 12px 16px; font-size: 1rem; cursor: pointer; font-family: inherit; }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.big { width: 100%; padding: 16px; font-size: 1.1rem; }
   button:disabled { opacity: .45; cursor: default; }
-  label { display: block; font-size: .9rem; color: var(--sub); margin: 10px 0 4px; }
-  input[type=text], input[type=password], textarea { width: 100%; padding: 10px; font-size: 1rem;
+  label { display: block; font-size: .9rem; color: var(--sub); margin: 12px 0 4px; }
+  input[type=text], input[type=password] { width: 100%; padding: 10px; font-size: 1rem;
     border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
-  textarea { font-family: ui-monospace, monospace; font-size: .85rem; }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 12px; }
   .thumb { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
   .thumb img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
   .thumb span { position: absolute; left: 4px; bottom: 4px; font-size: .75rem; background: rgba(0,0,0,.6); color: #fff; padding: 0 5px; border-radius: 4px; }
   .thumb button { position: absolute; right: 4px; top: 4px; padding: 2px 8px; font-size: .85rem; border-radius: 6px; }
   .muted { color: var(--sub); font-size: .9rem; }
-  #log { font-size: .9rem; margin: 0; padding-left: 1.2em; }
-  #log li.ok { color: var(--ok); } #log li.err { color: var(--err); }
   .warn { color: var(--warn); }
-  details summary { cursor: pointer; font-weight: 600; }
-  .hidden { display: none; }
+  .hidden { display: none !important; }
   input[type=file] { display: none; }
+
+  /* ダイアログ（設定・進捗） */
+  dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(520px, calc(100vw - 32px));
+    background: var(--card); color: var(--ink); }
+  dialog::backdrop { background: var(--shade); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .dlg-head h2 { font-size: 1.1rem; margin: 0; }
+  .dlg-body { padding: 16px; }
+  .dlg-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  .bar { height: 14px; background: var(--track); border-radius: 7px; overflow: hidden; margin: 14px 0 6px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); border-radius: 7px; transition: width .4s ease; }
+  .bar.err > div { background: var(--err); }
+  .bar.ok > div { background: var(--ok); }
+  .pct { display: flex; justify-content: space-between; font-size: .9rem; color: var(--sub); }
+  #stage { font-weight: 600; margin: 0; }
+  #stageSub { margin: 2px 0 0; }
+  .steps { list-style: none; padding: 0; margin: 14px 0 0; font-size: .9rem; }
+  .steps li { padding: 2px 0; color: var(--sub); }
+  .steps li::before { content: "○ "; }
+  .steps li.now { color: var(--ink); font-weight: 600; }
+  .steps li.now::before { content: "▶ "; color: var(--accent); }
+  .steps li.done { color: var(--ok); }
+  .steps li.done::before { content: "✓ "; }
+  .steps li.fail { color: var(--err); }
+  .steps li.fail::before { content: "✕ "; }
+  #errMsg { color: var(--err); margin: 10px 0 0; white-space: pre-wrap; }
 </style>
 </head>
 <body>
-<main>
-  <h1>作業日報OCR</h1>
+<header>
+  <div class="in">
+    <h1>作業日報OCR</h1>
+    <button class="icon-btn" id="openSettings" aria-label="設定">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+  </div>
+</header>
 
-  <details class="card" id="settingsBox">
-    <summary>設定（最初に1回だけ）</summary>
-    <p class="muted">設定はこのタブレットのブラウザ内にだけ保存されます。</p>
-    <label for="repo">処理用リポジトリ（ユーザー名/リポジトリ名）</label>
-    <input type="text" id="repo" placeholder="markone-1/cocona-report" autocomplete="off">
-    <label for="token">GitHub アクセストークン（このリポジトリ専用）</label>
-    <input type="password" id="token" autocomplete="off">
-    <label for="key">暗号鍵（GitHub の Secret「REPORT_KEY」と同じ値）</label>
-    <input type="password" id="key" autocomplete="off">
-    <div class="row" style="margin-top:12px">
-      <button id="saveCfg" class="primary">保存</button>
-      <button id="genKey">新しい暗号鍵を作る</button>
-      <button id="cleanAll">GitHubに残った古いジョブを削除</button>
-    </div>
-    <div id="keyOut" class="hidden">
-      <label>新しい暗号鍵（コピーして GitHub の Secret「REPORT_KEY」に登録）</label>
-      <textarea id="keyText" rows="2" readonly></textarea>
-    </div>
-  </details>
+<main>
+  <p class="muted hidden" id="needCfg">右上の歯車から設定を入力してください。</p>
 
   <section class="card">
     <h2>1. 伝票を撮影・選択</h2>
@@ -82,10 +103,9 @@
   </section>
 
   <section class="card">
-    <h2>2. OCRしてExcelを作成</h2>
-    <button id="run" class="primary" disabled>OCRしてExcelを作成</button>
-    <p class="muted">画像は暗号化してから送信します。処理には1〜3分ほどかかります。終わるまでこの画面を開いたままにしてください。</p>
-    <ol id="log"></ol>
+    <h2>2. ファイル送信</h2>
+    <button id="send" class="primary big" disabled>ファイル送信</button>
+    <p class="muted">選んだ画像を1つのPDFにまとめて送信し、OCRしてExcelを作成します。1〜3分ほどかかります。終わるまでこの画面を開いたままにしてください。</p>
   </section>
 
   <section class="card hidden" id="resultBox">
@@ -94,12 +114,55 @@
     <ul id="warnList" class="warn"></ul>
     <div class="row">
       <button id="saveXlsx" class="primary">Excelを保存</button>
-      <button id="saveZip">画像をZIPで保存</button>
+      <button id="savePdf">PDFを保存</button>
     </div>
   </section>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- 設定ダイアログ -->
+<dialog id="settingsDlg">
+  <div class="dlg-head">
+    <h2>設定</h2>
+    <button class="icon-btn" id="closeSettings" aria-label="閉じる">✕</button>
+  </div>
+  <div class="dlg-body">
+    <p class="muted" style="margin:0">設定はこのタブレットのブラウザ内にだけ保存されます。</p>
+    <label for="repo">処理用リポジトリ（ユーザー名/リポジトリ名）</label>
+    <input type="text" id="repo" placeholder="markone-1/cocona-report" autocomplete="off">
+    <label for="token">GitHub アクセストークン（このリポジトリ専用）</label>
+    <input type="password" id="token" autocomplete="off">
+    <label style="margin-top:20px">メンテナンス</label>
+    <button id="cleanAll">GitHubに残った古いジョブを削除</button>
+  </div>
+  <div class="dlg-foot">
+    <button id="cancelCfg">キャンセル</button>
+    <button id="saveCfg" class="primary">保存</button>
+  </div>
+</dialog>
+
+<!-- 進捗ダイアログ -->
+<dialog id="progDlg">
+  <div class="dlg-head"><h2>ファイル送信</h2></div>
+  <div class="dlg-body">
+    <p id="stage">準備中…</p>
+    <p id="stageSub" class="muted"></p>
+    <div class="bar" id="bar"><div id="barFill"></div></div>
+    <div class="pct"><span id="elapsed">0秒</span><span id="pct">0%</span></div>
+    <ul class="steps" id="steps">
+      <li data-k="pdf">PDF化</li>
+      <li data-k="up">送信</li>
+      <li data-k="run">OCR・Excel作成（GitHub）</li>
+      <li data-k="down">結果の受信</li>
+      <li data-k="clean">GitHubから削除</li>
+    </ul>
+    <p id="errMsg" class="hidden"></p>
+  </div>
+  <div class="dlg-foot">
+    <button id="closeProg" class="primary" disabled>処理中…</button>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 "use strict";
 const API = "https://api.github.com";
@@ -111,25 +174,22 @@ const store = {
   get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} },
 };
-function cfg() { return { repo: store.get("repo"), token: store.get("token"), key: store.get("key") }; }
-function loadCfg() {
-  const c = cfg();
-  $("#repo").value = c.repo; $("#token").value = c.token; $("#key").value = c.key;
-  if (!c.repo || !c.token || !c.key) $("#settingsBox").open = true;
+function cfg() { return { repo: store.get("repo"), token: store.get("token") }; }
+function cfgOk() { const c = cfg(); return !!(c.repo && c.token); }
+function openSettings() {
+  const c = cfg(); $("#repo").value = c.repo; $("#token").value = c.token;
+  $("#settingsDlg").showModal();
 }
+$("#openSettings").onclick = openSettings;
+$("#closeSettings").onclick = $("#cancelCfg").onclick = () => $("#settingsDlg").close();
 $("#saveCfg").onclick = () => {
   store.set("repo", $("#repo").value.trim());
   store.set("token", $("#token").value.trim());
-  store.set("key", $("#key").value.trim());
-  alert("保存しました");
-  updateRun();
-};
-$("#genKey").onclick = () => {
-  const k = b64(crypto.getRandomValues(new Uint8Array(32)));
-  $("#key").value = k; $("#keyText").value = k; $("#keyOut").classList.remove("hidden");
+  $("#settingsDlg").close();
+  updateUI();
 };
 
-// ── Base64 / 暗号（AES-256-GCM：先頭12バイト=IV） ──
+// ── Base64 ──
 function b64(u8) {
   let s = ""; const n = 0x8000;
   for (let i = 0; i < u8.length; i += n) s += String.fromCharCode.apply(null, u8.subarray(i, i + n));
@@ -140,49 +200,35 @@ function unb64(s) {
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   return u8;
 }
-async function aesKey() {
-  const raw = unb64(cfg().key);
-  if (raw.length !== 32) throw new Error("暗号鍵が不正です（設定を確認）");
-  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
-}
-async function encrypt(u8) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(), u8));
-  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return out;
-}
-async function decrypt(u8) {
-  return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: u8.subarray(0, 12) }, await aesKey(), u8.subarray(12)));
-}
 
-// ── GitHub API ──
-async function gh(path, opt = {}) {
+// ── GitHub API（90秒で打ち切り。onUpload があれば XHR で送信進捗を返す） ──
+function gh(path, opt = {}) {
   const c = cfg();
-  // 通信が固まったまま進まないのを防ぐ：90秒で打ち切ってエラー表示
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 90000);
-  let r;
-  try {
-    r = await fetch(API + `/repos/${c.repo}` + path, {
-      method: opt.method || "GET", signal: ac.signal,
-      headers: { Authorization: "Bearer " + c.token, Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28", ...(opt.body ? { "Content-Type": "application/json" } : {}) },
-      body: opt.body ? JSON.stringify(opt.body) : undefined,
-    });
-  } catch (e) {
-    throw new Error(e.name === "AbortError" ? "通信が90秒応答しません（電波・Wi-Fiを確認）" : `通信できません（${e.message}）`);
-  } finally {
-    clearTimeout(timer);
-  }
-  if (!r.ok) {
-    if (opt.allow404 && r.status === 404) return null;
-    const t = await r.text();
-    throw new Error(`GitHub ${r.status}: ${t.slice(0, 160)}`);
-  }
-  return r.status === 204 ? null : r.json();
+  const url = API + `/repos/${c.repo}` + path;
+  const method = opt.method || "GET";
+  const body = opt.body ? JSON.stringify(opt.body) : null;
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open(method, url);
+    x.timeout = opt.timeout || 90000;
+    x.setRequestHeader("Authorization", "Bearer " + c.token);
+    x.setRequestHeader("Accept", "application/vnd.github+json");
+    x.setRequestHeader("X-GitHub-Api-Version", "2022-11-28");
+    if (body) x.setRequestHeader("Content-Type", "application/json");
+    if (opt.onUpload) x.upload.onprogress = (e) => e.lengthComputable && opt.onUpload(e.loaded / e.total);
+    x.onload = () => {
+      if (x.status >= 200 && x.status < 300) return resolve(x.status === 204 || !x.responseText ? null : JSON.parse(x.responseText));
+      if (opt.allow404 && x.status === 404) return resolve(null);
+      reject(new Error(`GitHub ${x.status}: ${(x.responseText || "").slice(0, 160)}`));
+    };
+    x.ontimeout = () => reject(new Error("通信が応答しません（電波・Wi-Fiを確認）"));
+    x.onerror = () => reject(new Error("通信できません（電波・Wi-Fi・設定を確認）"));
+    x.send(body);
+  });
 }
 
 // ── 画像（長辺2000pxのJPEGに縮小して保持） ──
-let images = []; // {name, data: Uint8Array, url}
+let images = []; // {orig, name, data: Uint8Array, url, w, h}
 async function addFiles(files) {
   for (const f of files) {
     try {
@@ -192,7 +238,8 @@ async function addFiles(files) {
       cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
       cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
       const blob = await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.88));
-      images.push({ orig: f.name || "photo.jpg", data: new Uint8Array(await blob.arrayBuffer()), url: URL.createObjectURL(blob) });
+      images.push({ orig: f.name || "photo.jpg", data: new Uint8Array(await blob.arrayBuffer()),
+        url: URL.createObjectURL(blob), w: cv.width, h: cv.height });
     } catch (e) {
       alert(`${f.name} を読み込めませんでした（HEIC等は非対応）`);
     }
@@ -200,44 +247,89 @@ async function addFiles(files) {
   renderThumbs();
 }
 function renderThumbs() {
-  images.forEach((im, i) => im.name = `p${String(i + 1).padStart(2, "0")}.jpg`);
+  images.forEach((im, i) => im.name = `p${String(i + 1).padStart(2, "0")}`);
   $("#thumbs").innerHTML = "";
   images.forEach((im, i) => {
     const d = document.createElement("div"); d.className = "thumb";
-    d.innerHTML = `<img src="${im.url}" alt=""><span>${im.name}</span><button aria-label="削除">×</button>`;
+    d.innerHTML = `<img src="${im.url}" alt=""><span>${i + 1}</span><button aria-label="削除">×</button>`;
     d.querySelector("button").onclick = () => { URL.revokeObjectURL(im.url); images.splice(i, 1); renderThumbs(); };
     $("#thumbs").appendChild(d);
   });
   $("#imgCount").textContent = `画像 ${images.length} 枚`;
-  updateRun();
+  updateUI();
 }
 $("#cam").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
 $("#pick").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
-$("#clearImgs").onclick = () => { if (confirm("画像を全部クリアしますか？")) { images.forEach((im) => URL.revokeObjectURL(im.url)); images = []; renderThumbs(); } };
+$("#clearImgs").onclick = () => { if (images.length && confirm("画像を全部クリアしますか？")) { images.forEach((im) => URL.revokeObjectURL(im.url)); images = []; renderThumbs(); } };
 
 let busy = false;
-let wakeLock = null;
-function updateRun() { const c = cfg(); $("#run").disabled = busy || !images.length || !c.repo || !c.token || !c.key; }
+function updateUI() {
+  $("#send").disabled = busy || !images.length || !cfgOk();
+  $("#needCfg").classList.toggle("hidden", cfgOk());
+}
 
-// ── 進捗表示 ──
-function log(msg, cls) { const li = document.createElement("li"); li.textContent = msg; if (cls) li.className = cls; $("#log").appendChild(li); return li; }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// ── PDF化（1枚＝1ページ、画像の解像度そのまま） ──
+async function makePdf(onStep) {
+  const { jsPDF } = window.jspdf;
+  let doc = null;
+  for (const [i, im] of images.entries()) {
+    const fmt = [im.w, im.h], ori = im.w > im.h ? "l" : "p";
+    if (!doc) doc = new jsPDF({ unit: "pt", format: fmt, orientation: ori, compress: true });
+    else doc.addPage(fmt, ori);
+    doc.addImage(im.data, "JPEG", 0, 0, im.w, im.h, undefined, "NONE");
+    onStep(i + 1);
+    await new Promise((r) => setTimeout(r, 0)); // 画面更新のため
+  }
+  return new Uint8Array(doc.output("arraybuffer"));
+}
+
+// ── 進捗ダイアログ ──
+const prog = {
+  t0: 0, timer: null,
+  open() {
+    this.t0 = Date.now();
+    $("#bar").className = "bar"; $("#errMsg").classList.add("hidden");
+    document.querySelectorAll("#steps li").forEach((li) => li.className = "");
+    $("#closeProg").disabled = true; $("#closeProg").textContent = "処理中…";
+    this.set(0, "準備中…", "");
+    this.timer = setInterval(() => $("#elapsed").textContent = `${Math.round((Date.now() - this.t0) / 1000)}秒`, 1000);
+    $("#progDlg").showModal();
+  },
+  set(p, stage, sub) {
+    const v = Math.max(0, Math.min(100, p));
+    $("#barFill").style.width = v + "%"; $("#pct").textContent = Math.round(v) + "%";
+    if (stage !== undefined) $("#stage").textContent = stage;
+    if (sub !== undefined) $("#stageSub").textContent = sub;
+  },
+  step(k) {
+    let passed = true;
+    document.querySelectorAll("#steps li").forEach((li) => {
+      if (li.dataset.k === k) { li.className = "now"; passed = false; }
+      else if (passed) li.className = "done";
+    });
+  },
+  finish(ok, msg) {
+    clearInterval(this.timer);
+    document.querySelectorAll("#steps li.now").forEach((li) => li.className = ok ? "done" : "fail");
+    if (ok) { document.querySelectorAll("#steps li").forEach((li) => li.className = "done"); this.set(100, "完了しました", msg || ""); $("#bar").className = "bar ok"; }
+    else { $("#bar").className = "bar err"; $("#stage").textContent = "エラーで中断しました"; $("#errMsg").textContent = msg; $("#errMsg").classList.remove("hidden"); }
+    $("#closeProg").disabled = false; $("#closeProg").textContent = "閉じる";
+  },
+};
+$("#closeProg").onclick = () => $("#progDlg").close();
+$("#progDlg").addEventListener("cancel", (e) => { if (busy) e.preventDefault(); }); // 処理中は戻るキーで閉じない
 
 // ── 結果 ──
-let result = null; // {xlsxName, xlsx: Uint8Array, ymd}
+let result = null; // {xlsxName, xlsx, ymd}
+let pdfData = null;
 function download(name, u8, type) {
   const url = URL.createObjectURL(new Blob([u8], { type }));
   const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
 }
-$("#saveXlsx").onclick = () => result && download(result.xlsxName, result.xlsx,
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-$("#saveZip").onclick = async () => {
-  if (!result) return;
-  const zip = new JSZip(); const dir = zip.folder(result.ymd);
-  images.forEach((im) => dir.file(`${im.name.replace(".jpg", "")}_${im.orig.replace(/\.[^.]+$/, "")}.jpg`, im.data));
-  download(`${result.ymd}_images.zip`, await zip.generateAsync({ type: "uint8array" }), "application/zip");
-};
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+$("#saveXlsx").onclick = () => result && download(result.xlsxName, result.xlsx, XLSX_TYPE);
+$("#savePdf").onclick = () => result && pdfData && download(`${result.ymd}.pdf`, pdfData, "application/pdf");
 
 // ── GitHubの後片付け（ブランチ＋実行記録） ──
 async function cleanup(jobId, runId) {
@@ -245,14 +337,14 @@ async function cleanup(jobId, runId) {
   await gh(`/git/refs/heads/job/${jobId}`, { method: "DELETE", allow404: true });
 }
 $("#cleanAll").onclick = async () => {
-  if (!confirm("GitHubに残っているジョブ（暗号化データ・実行記録）を削除しますか？\n（他のタブレットが処理中の可能性がある30分以内のジョブは残します）")) return;
+  if (!cfgOk()) return alert("先にリポジトリとトークンを保存してください");
+  if (!confirm("GitHubに残っているジョブ（送信データ・実行記録）を削除しますか？\n（他のタブレットが処理中の可能性がある30分以内のジョブは残します）")) return;
   try {
     // ジョブID先頭の yyyymmddHHMMSS から作成時刻を求め、30分以上前のものだけ消す（複数台運用で他端末の処理中ジョブを消さない）
     const old = (ref) => {
       const m = ref.match(/job\/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})-/);
       if (!m) return true;
-      const t = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
-      return Date.now() - t > 30 * 60 * 1000;
+      return Date.now() - new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() > 30 * 60 * 1000;
     };
     const refs = ((await gh(`/git/matching-refs/heads/job/`)) || []).filter((r) => old(r.ref));
     for (const r of refs) await gh(`/git/${r.ref}`, { method: "DELETE", allow404: true });
@@ -263,89 +355,99 @@ $("#cleanAll").onclick = async () => {
   } catch (e) { alert("削除に失敗: " + e.message); }
 };
 
-// ── メイン処理 ──
-$("#run").onclick = async () => {
-  busy = true; updateRun(); $("#log").innerHTML = ""; $("#resultBox").classList.add("hidden"); result = null;
-  const now = new Date(); const p = (n) => String(n).padStart(2, "0");
-  const jobId = `${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}-`
+// ── ファイル送信（PDF化 → 送信 → GitHubでOCR・Excel作成 → 受信 → 削除） ──
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let wakeLock = null;
+$("#send").onclick = async () => {
+  busy = true; updateUI(); $("#resultBox").classList.add("hidden"); result = null; pdfData = null;
+  prog.open();
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch {} // 処理中に画面が消えると通信が止まるため
+  const now = new Date(); const p2 = (n) => String(n).padStart(2, "0");
+  const jobId = `${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}-`
     + Math.random().toString(36).slice(2, 6).padEnd(4, "0");
   const branch = `job/${jobId}`;
-  let runId = null;
+  let runId = null, sent = false;
   try {
-    // 1) 暗号化してアップロード（1コミットで一時ブランチを作成）
-    // 処理中に画面が消えると通信が止まるので、スリープを抑止（対応ブラウザのみ）
-    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch {}
-    const l1 = log("GitHub に接続中…");
+    // 1) PDF化（0〜15%）
+    prog.step("pdf");
+    pdfData = await makePdf((i) => prog.set(15 * i / images.length, "PDFを作成中…", `${i} / ${images.length} ページ`));
+    const mb = (pdfData.length / 1048576).toFixed(1);
+
+    // 2) 送信（15〜35%）：1コミットで一時ブランチ job/<ID> を作る
+    prog.step("up");
+    prog.set(15, "送信中…", `PDF ${mb}MB`);
     const main = await gh(`/git/ref/heads/main`);
     const base = await gh(`/git/commits/${main.object.sha}`);
-    const tree = [];
-    for (const [i, im] of images.entries()) {
-      l1.textContent = `画像を暗号化して送信中… ${i + 1}/${images.length} 枚目`;
-      const enc = await encrypt(im.data);
-      const blob = await gh(`/git/blobs`, { method: "POST", body: { content: b64(enc), encoding: "base64" } });
-      tree.push({ path: `in/${im.name}.enc`, mode: "100644", type: "blob", sha: blob.sha });
-    }
-    l1.textContent = "送信内容を確定中…";
-    const t = await gh(`/git/trees`, { method: "POST", body: { base_tree: base.tree.sha, tree } });
+    const blob = await gh(`/git/blobs`, { method: "POST", timeout: 300000, body: { content: b64(pdfData), encoding: "base64" },
+      onUpload: (r) => prog.set(15 + 18 * r, "送信中…", `PDF ${mb}MB　${Math.round(r * 100)}%`) });
+    const t = await gh(`/git/trees`, { method: "POST", body: { base_tree: base.tree.sha,
+      tree: [{ path: "in/report.pdf", mode: "100644", type: "blob", sha: blob.sha }] } });
     const c = await gh(`/git/commits`, { method: "POST", body: { message: `job ${jobId}`, tree: t.sha, parents: [main.object.sha] } });
     await gh(`/git/refs`, { method: "POST", body: { ref: `refs/heads/${branch}`, sha: c.sha } });
-    l1.textContent = "送信完了"; l1.className = "ok";
+    sent = true;
+    prog.set(35, "送信完了", "");
 
-    // 2) Actions を起動して完了を待つ
+    // 3) GitHub Actions でOCR・Excel作成（35〜90%：経過時間から見込みで進める）
+    prog.step("run");
     await gh(`/actions/workflows/${WORKFLOW}/dispatches`, { method: "POST", body: { ref: branch, inputs: { job_id: jobId } } });
-    const l2 = log("処理中…（起動待ち）");
-    const t0 = Date.now(); let run = null;
+    const r0 = Date.now(); let run = null;
     while (true) {
-      await sleep(8000);
-      const sec = Math.round((Date.now() - t0) / 1000);
+      await sleep(5000);
+      const sec = Math.round((Date.now() - r0) / 1000);
       if (sec > 25 * 60) throw new Error("時間切れ（25分）");
+      prog.set(35 + 55 * (1 - Math.exp(-sec / 90)), "OCR・Excel作成中…", run ? "GitHubで処理しています" : "GitHubの起動を待っています");
       const rs = await gh(`/actions/workflows/${WORKFLOW}/runs?branch=${encodeURIComponent(branch)}&per_page=5`);
       run = rs.workflow_runs[0];
-      if (!run) { l2.textContent = `処理中…（起動待ち ${sec}秒）`; continue; }
+      if (!run) continue;
       runId = run.id;
       if (run.status === "completed") break;
-      l2.textContent = `処理中…（${sec}秒経過）`;
     }
-    if (run.conclusion !== "success") throw new Error(`処理に失敗しました（${run.conclusion}）。GitHub の Actions 画面で失敗した手順名を確認してください`);
-    l2.textContent = "処理完了"; l2.className = "ok";
+    if (run.conclusion !== "success") throw new Error(`GitHubでの処理に失敗しました（${run.conclusion}）。\nGitHub の Actions 画面で失敗した手順名を確認してください。`);
 
-    // 3) 暗号化された結果を取得して復号
-    const l3 = log("結果を受信中…");
+    // 4) 結果の受信（90〜97%）
+    prog.step("down");
+    prog.set(90, "結果を受信中…", "");
     const ref = await gh(`/git/ref/heads/${branch}`);
     const head = await gh(`/git/commits/${ref.object.sha}`);
-    const files = (await gh(`/git/trees/${head.tree.sha}?recursive=1`)).tree.filter((x) => x.path.startsWith("out/") && x.path.endsWith(".enc"));
-    const get = async (sha) => decrypt(unb64((await gh(`/git/blobs/${sha}`)).content));
-    const resF = files.find((x) => x.path === "out/result.json.enc");
-    const xlsF = files.find((x) => x.path.endsWith(".xlsx.enc"));
+    const files = (await gh(`/git/trees/${head.tree.sha}?recursive=1`)).tree.filter((x) => x.path.startsWith("out/"));
+    const get = async (sha) => unb64((await gh(`/git/blobs/${sha}`)).content);
+    const resF = files.find((x) => x.path === "out/result.json");
+    const xlsF = files.find((x) => x.path.endsWith(".xlsx"));
     if (!resF || !xlsF) throw new Error("結果ファイルが見つかりません");
     const res = JSON.parse(new TextDecoder().decode(await get(resF.sha)));
-    const xlsxName = xlsF.path.slice(4, -4);
+    const xlsxName = xlsF.path.slice(4);
     result = { xlsxName, xlsx: await get(xlsF.sha), ymd: xlsxName.slice(0, 8) };
-    l3.textContent = "受信・復号完了"; l3.className = "ok";
+    prog.set(97, "結果を受信しました", "");
 
-    // 4) 結果表示＋Excelを自動保存
+    // 5) GitHub から削除（97〜100%）
+    prog.step("clean");
+    prog.set(97, "GitHubから今回のデータを削除中…", "");
+    await cleanup(jobId, runId);
+
+    // 結果表示＋Excelを自動保存
     const cnt = Object.entries(res.counts || {}).map(([k, v]) => `${k} ${v}件`).join("・");
     $("#resultText").textContent = `${xlsxName}（${cnt}）`;
     $("#warnList").innerHTML = "";
     for (const w of (res.warnings || [])) { const li = document.createElement("li"); li.textContent = w; $("#warnList").appendChild(li); }
     $("#resultBox").classList.remove("hidden");
-    download(result.xlsxName, result.xlsx, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-    // 5) GitHub から削除
-    await cleanup(jobId, runId);
-    log("GitHub から今回のデータと実行記録を削除しました", "ok");
+    download(result.xlsxName, result.xlsx, XLSX_TYPE);
+    prog.finish(true, `${xlsxName} を保存しました（${cnt}）`);
   } catch (e) {
-    log("エラー: " + e.message, "err");
-    // 失敗時は暗号化データ（ブランチ）だけ消し、実行記録は原因調査用に残す（ログに顧客データは出ない）
-    try { await cleanup(jobId, null); log("GitHub の今回のデータを削除しました（実行記録は原因確認用に残しています）", "ok"); }
-    catch (e2) { log("削除にも失敗しました。設定の「GitHubに残った古いジョブを削除」を押してください", "err"); }
+    let msg = e.message;
+    // 失敗時は送信データ（ブランチ）だけ消し、実行記録は原因調査用に残す（ログに顧客データは出ない）
+    if (sent) {
+      try { await cleanup(jobId, null); msg += "\n\nGitHub の今回の送信データは削除しました。"; }
+      catch { msg += "\n\nGitHub の削除にも失敗しました。設定の「GitHubに残った古いジョブを削除」を押してください。"; }
+    }
+    prog.finish(false, msg);
   } finally {
-    busy = false; updateRun();
+    busy = false; updateUI();
     try { await wakeLock?.release(); } catch {} wakeLock = null;
   }
 };
 
-loadCfg(); renderThumbs();
+renderThumbs();
+if (!cfgOk()) openSettings();
 </script>
 </body>
 </html>
