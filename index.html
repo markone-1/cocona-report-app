@@ -60,7 +60,7 @@
     <div class="row" style="margin-top:12px">
       <button id="saveCfg" class="primary">保存</button>
       <button id="genKey">新しい暗号鍵を作る</button>
-      <button id="cleanAll">GitHubに残ったジョブを全部削除</button>
+      <button id="cleanAll">GitHubに残った古いジョブを削除</button>
     </div>
     <div id="keyOut" class="hidden">
       <label>新しい暗号鍵（コピーして GitHub の Secret「REPORT_KEY」に登録）</label>
@@ -234,9 +234,16 @@ async function cleanup(jobId, runId) {
   await gh(`/git/refs/heads/job/${jobId}`, { method: "DELETE", allow404: true });
 }
 $("#cleanAll").onclick = async () => {
-  if (!confirm("GitHubに残っているジョブ（暗号化データ・実行記録）を全部削除しますか？")) return;
+  if (!confirm("GitHubに残っているジョブ（暗号化データ・実行記録）を削除しますか？\n（他のタブレットが処理中の可能性がある30分以内のジョブは残します）")) return;
   try {
-    const refs = (await gh(`/git/matching-refs/heads/job/`)) || [];
+    // ジョブID先頭の yyyymmddHHMMSS から作成時刻を求め、30分以上前のものだけ消す（複数台運用で他端末の処理中ジョブを消さない）
+    const old = (ref) => {
+      const m = ref.match(/job\/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})-/);
+      if (!m) return true;
+      const t = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+      return Date.now() - t > 30 * 60 * 1000;
+    };
+    const refs = ((await gh(`/git/matching-refs/heads/job/`)) || []).filter((r) => old(r.ref));
     for (const r of refs) await gh(`/git/${r.ref}`, { method: "DELETE", allow404: true });
     const runs = await gh(`/actions/workflows/${WORKFLOW}/runs?per_page=100`);
     let n = 0;
@@ -315,7 +322,7 @@ $("#run").onclick = async () => {
     log("エラー: " + e.message, "err");
     // 失敗時は暗号化データ（ブランチ）だけ消し、実行記録は原因調査用に残す（ログに顧客データは出ない）
     try { await cleanup(jobId, null); log("GitHub の今回のデータを削除しました（実行記録は原因確認用に残しています）", "ok"); }
-    catch (e2) { log("削除にも失敗しました。設定の「GitHubに残ったジョブを全部削除」を押してください", "err"); }
+    catch (e2) { log("削除にも失敗しました。設定の「GitHubに残った古いジョブを削除」を押してください", "err"); }
   } finally {
     busy = false; updateRun();
   }
