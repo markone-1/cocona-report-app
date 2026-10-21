@@ -96,7 +96,7 @@
   .vw-stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 0; }
   .vw-stage img { max-width: calc(100% - 120px); max-height: 100%; object-fit: contain; transition: transform .25s ease; user-select: none; -webkit-user-drag: none; }
   .vw-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 72px; border-radius: 10px;
-    background: rgba(255,255,255,.14); color: #fff; border: 0; font-size: 2rem; line-height: 1; padding: 0; }
+    background: rgba(255,255,255,.14); color: #fff; border: 0; font-size: 2rem; line-height: 1; padding: 0; z-index: 2; }
   .vw-nav:disabled { opacity: .2; }
   .vw-nav.prev { left: 6px; } .vw-nav.next { right: 6px; }
   .vw-tools { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
