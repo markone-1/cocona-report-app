@@ -93,6 +93,17 @@
   .vw-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
   .vw-head .count { font-size: 1.05rem; font-weight: 600; }
   .vw-head .pending { color: #f5c451; font-size: .9rem; margin-left: 10px; }
+  .vw-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 14px 6px; scrollbar-width: thin; }
+  .vs-item { flex: none; position: relative; width: 60px; height: 80px; border-radius: 6px; overflow: hidden;
+    border: 3px solid transparent; background: #222; touch-action: none; cursor: grab; user-select: none; }
+  .vs-item img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .vs-item span { position: absolute; left: 3px; bottom: 2px; font-size: .7rem; background: rgba(0,0,0,.65); color: #fff; padding: 0 4px; border-radius: 3px; }
+  .vs-item.cur { border-color: var(--accent); }
+  .vs-item.dragging { opacity: .25; }
+  .vs-ghost { position: fixed; z-index: 20; pointer-events: none; width: 60px; height: 80px; border-radius: 6px; overflow: hidden;
+    border: 3px solid #f5c451; box-shadow: 0 6px 18px rgba(0,0,0,.6); transform: scale(1.12); }
+  .vs-ghost img { width: 100%; height: 100%; object-fit: cover; }
+  .vw-hint { font-size: .78rem; color: #9aa5b1; padding: 0 14px 4px; }
   .vw-stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 0; }
   .vw-stage img { max-width: calc(100% - 120px); max-height: 100%; object-fit: contain; transition: transform .25s ease; user-select: none; -webkit-user-drag: none; }
   .vw-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 72px; border-radius: 10px;
@@ -108,7 +119,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/21-k</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/21-l</small></h1>
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
@@ -188,6 +199,8 @@
       <div><span class="count" id="vwCount">1 / 1</span><span class="pending hidden" id="vwPending">回転は未保存です</span></div>
       <button id="vwClose">閉じる</button>
     </div>
+    <div class="vw-strip" id="vwStrip"></div>
+    <div class="vw-hint">タップで表示／長押ししてドラッグで順番を入れ替え</div>
     <div class="vw-stage" id="vwStage">
       <button class="vw-nav prev" id="vwPrev" aria-label="戻る">＜</button>
       <img id="vwImg" alt="">
@@ -378,7 +391,93 @@ function showViewer() {
   $("#vwCount").textContent = `${vw.i + 1} / ${images.length}`;
   $("#vwPrev").disabled = vw.i === 0;
   $("#vwNext").disabled = vw.i === images.length - 1;
+  renderStrip();
   applyRot();
+}
+
+// ── ビューアー上部の一覧（タップで表示、長押し→ドラッグで並べ替え） ──
+function renderStrip() {
+  const s = $("#vwStrip"); s.innerHTML = "";
+  images.forEach((im, i) => {
+    const d = document.createElement("div");
+    d.className = "vs-item" + (i === vw.i ? " cur" : ""); d.dataset.i = i;
+    d.innerHTML = `<img src="${im.url}" alt="" draggable="false"><span>${i + 1}</span>`;
+    s.appendChild(d);
+  });
+  const cur = s.children[vw.i];
+  if (cur) cur.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+let ps = null; // ポインタ操作の状態 {id, item, x0, sl0, mode: pending|scroll|drag, timer, ghost}
+const strip = $("#vwStrip");
+strip.addEventListener("pointerdown", (e) => {
+  if (ps) return;
+  const item = e.target.closest(".vs-item");
+  ps = { id: e.pointerId, item, x0: e.clientX, sl0: strip.scrollLeft, mode: "pending", mouse: e.pointerType === "mouse" };
+  strip.setPointerCapture(e.pointerId);
+  // タッチは長押し（0.3秒）でドラッグ開始。それまでに指が動いたら一覧のスクロール
+  if (item && !ps.mouse) ps.timer = setTimeout(() => startDrag(e.clientX, e.clientY), 300);
+});
+strip.addEventListener("pointermove", (e) => {
+  if (!ps || e.pointerId !== ps.id) return;
+  const dx = e.clientX - ps.x0;
+  if (ps.mode === "pending" && Math.abs(dx) > 8) {
+    clearTimeout(ps.timer);
+    if (ps.mouse && ps.item) startDrag(e.clientX, e.clientY); // マウスは動かした時点でドラッグ
+    else ps.mode = "scroll";
+  }
+  if (ps.mode === "scroll") strip.scrollLeft = ps.sl0 - dx;
+  else if (ps.mode === "drag") moveDrag(e.clientX, e.clientY);
+});
+function endPointer(e, cancelled) {
+  if (!ps || e.pointerId !== ps.id) return;
+  clearTimeout(ps.timer);
+  if (ps.mode === "pending" && ps.item && !cancelled) selectFromStrip(+ps.item.dataset.i);
+  else if (ps.mode === "drag") endDrag();
+  ps = null;
+}
+strip.addEventListener("pointerup", (e) => endPointer(e, false));
+strip.addEventListener("pointercancel", (e) => endPointer(e, true));
+strip.addEventListener("contextmenu", (e) => e.preventDefault()); // 長押しメニューを出さない
+
+async function selectFromStrip(i) {
+  if (i === vw.i) return;
+  await leaveViewerImage(); vw.i = i; showViewer();
+}
+function startDrag(x, y) {
+  if (!ps || !ps.item) return;
+  ps.mode = "drag";
+  ps.item.classList.add("dragging");
+  const g = document.createElement("div"); g.className = "vs-ghost";
+  g.innerHTML = `<img src="${ps.item.querySelector("img").src}" alt="">`;
+  $("#viewer").appendChild(g); // ダイアログ（最前面）の中に置かないと見えない
+  ps.ghost = g;
+  navigator.vibrate?.(25);
+  moveDrag(x, y);
+}
+function moveDrag(x, y) {
+  const g = ps.ghost;
+  g.style.left = (x - 30) + "px"; g.style.top = (y - 40) + "px";
+  // 指の位置より右にある最初の画像の前へ移動（無ければ末尾）
+  const others = [...strip.children].filter((c) => c !== ps.item);
+  const before = others.find((c) => { const r = c.getBoundingClientRect(); return x < r.left + r.width / 2; });
+  if (before) { if (ps.item.nextSibling !== before) strip.insertBefore(ps.item, before); }
+  else if (strip.lastChild !== ps.item) strip.appendChild(ps.item);
+  // 端に近づいたら自動スクロール
+  const sr = strip.getBoundingClientRect();
+  if (x < sr.left + 40) strip.scrollLeft -= 14;
+  else if (x > sr.right - 40) strip.scrollLeft += 14;
+}
+function endDrag() {
+  ps.ghost?.remove();
+  ps.item.classList.remove("dragging");
+  const order = [...strip.children].map((c) => +c.dataset.i);
+  if (order.some((k, i) => k !== i)) {
+    const cur = images[vw.i];
+    images = order.map((k) => images[k]);
+    vw.i = images.indexOf(cur);
+    renderThumbs();
+  }
+  showViewer();
 }
 function applyRot() {
   const img = $("#vwImg"), st = $("#vwStage");
