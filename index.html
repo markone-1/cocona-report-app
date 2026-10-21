@@ -34,8 +34,14 @@
   button.big { width: 100%; padding: 16px; font-size: 1.1rem; }
   button:disabled { opacity: .45; cursor: default; }
   label { display: block; font-size: .9rem; color: var(--sub); margin: 12px 0 4px; }
-  input[type=text], input[type=password] { width: 100%; padding: 10px; font-size: 1rem;
+  input[type=text], input[type=password], input[type=email] { width: 100%; padding: 10px; font-size: 1rem;
     border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  label.chk { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 1rem; margin: 18px 0 4px; cursor: pointer; }
+  label.chk input { width: 22px; height: 22px; accent-color: var(--accent); }
+  .mail-list { list-style: none; padding: 0; margin: 8px 0 0; }
+  .mail-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: var(--bg); word-break: break-all; }
+  .mail-list button { padding: 4px 10px; font-size: .85rem; flex: none; }
   .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 12px; }
   .thumb { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
   .thumb img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
@@ -60,7 +66,7 @@
   .bar.ok > div { background: var(--ok); }
   .pct { display: flex; justify-content: space-between; font-size: .9rem; color: var(--sub); }
   #stage { font-weight: 600; margin: 0; }
-  #stageSub { margin: 2px 0 0; }
+  #stageSub { margin: 2px 0 0; white-space: pre-line; }
   .steps { list-style: none; padding: 0; margin: 14px 0 0; font-size: .9rem; }
   .steps li { padding: 2px 0; color: var(--sub); }
   .steps li::before { content: "○ "; }
@@ -76,7 +82,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-f</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-g</small></h1>
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
@@ -132,6 +138,16 @@
     <input type="text" id="repo" placeholder="markone-1/cocona-report" autocomplete="off">
     <label for="token">GitHub アクセストークン（このリポジトリ専用）</label>
     <input type="password" id="token" autocomplete="off">
+    <label class="chk"><input type="checkbox" id="mailOn"> 日報をメール送信する</label>
+    <div id="mailBox" class="hidden">
+      <label for="mailInput" style="margin-top:4px">送信先メールアドレス</label>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="email" id="mailInput" placeholder="example@example.com" autocomplete="off" inputmode="email">
+        <button id="mailAdd">登録</button>
+      </div>
+      <ul class="mail-list" id="mailList"></ul>
+      <p class="muted" style="margin:4px 0 0">OCR処理の完了後、登録したアドレスに「yyyymmdd 作業日報」の名前で日報Excelと送信PDFを送ります。</p>
+    </div>
     <label style="margin-top:20px">メンテナンス</label>
     <button id="cleanAll">GitHubに残った古いジョブを削除</button>
   </div>
@@ -184,8 +200,37 @@ function cfg() { return { repo: store.get("repo") || DEFAULT_REPO, token: store.
 function cfgOk() { const c = cfg(); return !!(c.repo && c.token); }
 function openSettings() {
   const c = cfg(); $("#repo").value = c.repo || DEFAULT_REPO; $("#token").value = c.token;
+  $("#mailOn").checked = mailOn(); renderMail();
   $("#settingsDlg").showModal();
 }
+
+// ── 日報のメール送信（チェックと宛先は操作した時点で保存） ──
+const MAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+function mailOn() { return store.get("mailOn") === "1"; }
+function mailTo() { try { return JSON.parse(store.get("mailTo") || "[]"); } catch { return []; } }
+function renderMail() {
+  $("#mailBox").classList.toggle("hidden", !$("#mailOn").checked);
+  $("#mailList").innerHTML = "";
+  mailTo().forEach((addr, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span></span><button aria-label="削除">削除</button>`;
+    li.querySelector("span").textContent = addr;
+    li.querySelector("button").onclick = () => {
+      const list = mailTo(); list.splice(i, 1); store.set("mailTo", JSON.stringify(list)); renderMail();
+    };
+    $("#mailList").appendChild(li);
+  });
+}
+$("#mailOn").onchange = () => { store.set("mailOn", $("#mailOn").checked ? "1" : ""); renderMail(); };
+$("#mailAdd").onclick = () => {
+  const addr = $("#mailInput").value.trim();
+  if (!MAIL_RE.test(addr)) return alert("メールアドレスの形式が正しくありません");
+  const list = mailTo();
+  if (list.includes(addr)) return alert("このアドレスは登録済みです");
+  list.push(addr); store.set("mailTo", JSON.stringify(list));
+  $("#mailInput").value = ""; renderMail();
+};
+$("#mailInput").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); $("#mailAdd").click(); } };
 $("#openSettings").onclick = openSettings;
 $("#closeSettings").onclick = $("#cancelCfg").onclick = () => $("#settingsDlg").close();
 $("#saveCfg").onclick = () => {
@@ -395,7 +440,10 @@ $("#send").onclick = async () => {
     const blob = await gh(`/git/blobs`, { method: "POST", timeout: 300000, body: { content: b64(pdfData), encoding: "base64" },
       onUpload: (r) => prog.set(15 + 18 * r, "送信中…", `PDF ${mb}MB　${Math.round(r * 100)}%`) });
     const t = await gh(`/git/trees`, { method: "POST", body: { base_tree: base.tree.sha,
-      tree: [{ path: "in/report.pdf", mode: "100644", type: "blob", sha: blob.sha }] } });
+      tree: [{ path: "in/report.pdf", mode: "100644", type: "blob", sha: blob.sha },
+        // メール送信がONで宛先があれば、宛先を in/meta.json として一緒に送る
+        ...(mailOn() && mailTo().length ? [{ path: "in/meta.json", mode: "100644", type: "blob",
+          content: JSON.stringify({ mail_to: mailTo() }) }] : [])] } });
     const c = await gh(`/git/commits`, { method: "POST", body: { message: `job ${jobId}`, tree: t.sha, parents: [main.object.sha] } });
     await gh(`/git/refs`, { method: "POST", body: { ref: `refs/heads/${branch}`, sha: c.sha } });
     sent = true;
@@ -442,10 +490,18 @@ $("#send").onclick = async () => {
     const cnt = Object.entries(res.counts || {}).map(([k, v]) => `${k} ${v}件`).join("・");
     $("#resultText").textContent = `${xlsxName}（${cnt}）`;
     $("#warnList").innerHTML = "";
-    for (const w of (res.warnings || [])) { const li = document.createElement("li"); li.textContent = w; $("#warnList").appendChild(li); }
+    const warns = [...(res.warnings || [])];
+    let mailMsg = "";
+    if (res.mail) {
+      if (res.mail.sent) mailMsg = `メール送信済み（${res.mail.requested}件）`;
+      else warns.unshift(`メールを送信できませんでした：${res.mail.error}`);
+      if (res.mail.sent && res.mail.error) warns.unshift(res.mail.error);
+    }
+    for (const w of warns) { const li = document.createElement("li"); li.textContent = w; $("#warnList").appendChild(li); }
     $("#resultBox").classList.remove("hidden");
     download(result.xlsxName, result.xlsx, XLSX_TYPE);
-    prog.finish(true, `${xlsxName} を保存しました（${cnt}）`);
+    prog.finish(true, `${xlsxName} を保存しました（${cnt}）` + (mailMsg ? `\n${mailMsg}` : "")
+      + (res.mail && !res.mail.sent ? "\nメールは送信できませんでした（結果欄を確認）" : ""));
   } catch (e) {
     let msg = e.message;
     // 失敗時は送信データ（ブランチ）だけ消し、実行記録は原因調査用に残す（ログに顧客データは出ない）
