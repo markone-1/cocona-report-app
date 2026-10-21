@@ -76,7 +76,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-d</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-e</small></h1>
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
@@ -179,7 +179,8 @@ const store = {
   set(k, v) { mem[k] = v; try { localStorage.setItem(k, v); if (localStorage.getItem(k) !== v) storageOk = false; } catch { storageOk = false; } },
 };
 const DEFAULT_REPO = "markone-1/cocona-report";
-function cfg() { return { repo: store.get("repo"), token: store.get("token") }; }
+// リポジトリ未保存なら既定値を使う（リポジトリ名の入力漏れで送信できなくならないように）
+function cfg() { return { repo: store.get("repo") || DEFAULT_REPO, token: store.get("token") }; }
 function cfgOk() { const c = cfg(); return !!(c.repo && c.token); }
 function openSettings() {
   const c = cfg(); $("#repo").value = c.repo || DEFAULT_REPO; $("#token").value = c.token;
@@ -277,8 +278,7 @@ function updateUI() {
   $("#needCfg").classList.toggle("hidden", cfgOk());
   // ボタンが押せない理由をボタンの下に出す
   const c = cfg();
-  $("#sendWhy").textContent = busy ? "" : !c.repo ? "※ 右上の歯車から「処理用リポジトリ」を入力して保存してください"
-    : !c.token ? "※ 右上の歯車から「GitHub アクセストークン」を入力して保存してください"
+  $("#sendWhy").textContent = busy ? "" : !c.token ? "※ 右上の歯車から「GitHub アクセストークン」を入力して保存してください"
     : !images.length ? "※ 先に画像を選んでください" : "";
 }
 
