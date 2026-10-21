@@ -83,12 +83,32 @@
   .steps li.fail { color: var(--err); }
   .steps li.fail::before { content: "✕ "; }
   #errMsg { color: var(--err); margin: 10px 0 0; white-space: pre-wrap; }
+  .thumb img { cursor: zoom-in; }
+
+  /* 画像ビューアー（全画面） */
+  #viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0; border-radius: 0;
+    background: #111418; color: #fff; }
+  #viewer::backdrop { background: #111418; }
+  .vw { display: flex; flex-direction: column; height: 100%; }
+  .vw-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
+  .vw-head .count { font-size: 1.05rem; font-weight: 600; }
+  .vw-head .pending { color: #f5c451; font-size: .9rem; margin-left: 10px; }
+  .vw-stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 0; }
+  .vw-stage img { max-width: calc(100% - 120px); max-height: 100%; object-fit: contain; transition: transform .25s ease; user-select: none; -webkit-user-drag: none; }
+  .vw-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 72px; border-radius: 10px;
+    background: rgba(255,255,255,.14); color: #fff; border: 0; font-size: 2rem; line-height: 1; padding: 0; }
+  .vw-nav:disabled { opacity: .2; }
+  .vw-nav.prev { left: 6px; } .vw-nav.next { right: 6px; }
+  .vw-tools { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  .vw-tools button, .vw-head button { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
+  .vw-tools button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vw-tools button.danger { background: #b42318; border-color: #b42318; color: #fff; }
 </style>
 </head>
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/21-j</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/21-k</small></h1>
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
@@ -158,6 +178,27 @@
   <div class="dlg-foot">
     <button id="cancelCfg">キャンセル</button>
     <button id="saveCfg" class="primary">保存</button>
+  </div>
+</dialog>
+
+<!-- 画像ビューアー -->
+<dialog id="viewer">
+  <div class="vw">
+    <div class="vw-head">
+      <div><span class="count" id="vwCount">1 / 1</span><span class="pending hidden" id="vwPending">回転は未保存です</span></div>
+      <button id="vwClose">閉じる</button>
+    </div>
+    <div class="vw-stage" id="vwStage">
+      <button class="vw-nav prev" id="vwPrev" aria-label="戻る">＜</button>
+      <img id="vwImg" alt="">
+      <button class="vw-nav next" id="vwNext" aria-label="次へ">＞</button>
+    </div>
+    <div class="vw-tools">
+      <button id="vwRotL">⟲ 左に回転</button>
+      <button id="vwRotR">⟳ 右に回転</button>
+      <button id="vwSave" class="primary" disabled>回転を保存</button>
+      <button id="vwDel" class="danger">この画像を削除</button>
+    </div>
   </div>
 </dialog>
 
@@ -289,6 +330,7 @@ function gh(path, opt = {}) {
 // ── 画像（長辺2000pxのJPEGに縮小して保持） ──
 let images = []; // {orig, name, data: Uint8Array, url, w, h}
 async function addFiles(files) {
+  const first = images.length; // 今回追加した最初の画像をビューアーで開く
   for (const f of files) {
     try {
       const bmp = await createImageBitmap(f);
@@ -304,6 +346,7 @@ async function addFiles(files) {
     }
   }
   renderThumbs();
+  if (images.length > first) openViewer(first);
 }
 function renderThumbs() {
   images.forEach((im, i) => im.name = `p${String(i + 1).padStart(2, "0")}`);
@@ -312,6 +355,7 @@ function renderThumbs() {
     const d = document.createElement("div"); d.className = "thumb";
     d.innerHTML = `<img src="${im.url}" alt=""><span>${i + 1}</span><button aria-label="削除">×</button>`;
     d.querySelector("button").onclick = () => { URL.revokeObjectURL(im.url); images.splice(i, 1); renderThumbs(); };
+    d.querySelector("img").onclick = () => openViewer(i);
     $("#thumbs").appendChild(d);
   });
   $("#imgCount").textContent = `画像 ${images.length} 枚`;
@@ -320,6 +364,92 @@ function renderThumbs() {
 $("#cam").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
 $("#pick").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
 $("#clearImgs").onclick = () => { if (images.length && confirm("画像を全部クリアしますか？")) { images.forEach((im) => URL.revokeObjectURL(im.url)); images = []; renderThumbs(); } };
+
+// ── 画像ビューアー（回転・保存・削除・＜ ＞で移動） ──
+const vw = { i: 0, rot: 0 }; // rot: 未保存の回転（度、90の倍数）
+function openViewer(i) {
+  vw.i = i; vw.rot = 0; showViewer();
+  if (!$("#viewer").open) $("#viewer").showModal();
+}
+function showViewer() {
+  const im = images[vw.i];
+  if (!im) return $("#viewer").close();
+  $("#vwImg").src = im.url;
+  $("#vwCount").textContent = `${vw.i + 1} / ${images.length}`;
+  $("#vwPrev").disabled = vw.i === 0;
+  $("#vwNext").disabled = vw.i === images.length - 1;
+  applyRot();
+}
+function applyRot() {
+  const img = $("#vwImg"), st = $("#vwStage");
+  // 横向き⇔縦向きになる回転では、表示枠に収まるよう縮小して見せる
+  const side = Math.abs(vw.rot / 90) % 2 === 1;
+  let scale = 1;
+  if (side && img.naturalWidth) {
+    const w = img.clientWidth, h = img.clientHeight;
+    scale = Math.min(1, (st.clientWidth - 120) / h, st.clientHeight / w);
+  }
+  img.style.transform = `rotate(${vw.rot}deg) scale(${scale})`;
+  const pending = vw.rot % 360 !== 0;
+  $("#vwSave").disabled = !pending;
+  $("#vwPending").classList.toggle("hidden", !pending);
+}
+$("#vwImg").onload = applyRot;
+async function saveRotation() {
+  const deg = ((vw.rot % 360) + 360) % 360;
+  if (!deg) return;
+  const im = images[vw.i];
+  const bmp = await createImageBitmap(new Blob([im.data], { type: "image/jpeg" }));
+  const cv = document.createElement("canvas");
+  const side = deg === 90 || deg === 270;
+  cv.width = side ? bmp.height : bmp.width; cv.height = side ? bmp.width : bmp.height;
+  const g = cv.getContext("2d");
+  g.translate(cv.width / 2, cv.height / 2); g.rotate(deg * Math.PI / 180);
+  g.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+  const blob = await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.92));
+  URL.revokeObjectURL(im.url);
+  Object.assign(im, { data: new Uint8Array(await blob.arrayBuffer()), url: URL.createObjectURL(blob), w: cv.width, h: cv.height });
+  vw.rot = 0;
+  renderThumbs(); showViewer();
+}
+// 未保存の回転があるまま移動・閉じるときは確認する
+async function leaveViewerImage() {
+  if (vw.rot % 360 === 0) return;
+  if (confirm("回転が保存されていません。保存しますか？\n（キャンセルで回転を取り消します）")) await saveRotation();
+  vw.rot = 0;
+}
+async function moveViewer(d) {
+  const n = vw.i + d;
+  if (n < 0 || n >= images.length) return;
+  await leaveViewerImage(); vw.i = n; showViewer();
+}
+$("#vwPrev").onclick = () => moveViewer(-1);
+$("#vwNext").onclick = () => moveViewer(1);
+$("#vwRotL").onclick = () => { vw.rot -= 90; applyRot(); };
+$("#vwRotR").onclick = () => { vw.rot += 90; applyRot(); };
+$("#vwSave").onclick = () => saveRotation();
+$("#vwDel").onclick = () => {
+  if (!confirm(`${vw.i + 1}枚目の画像を削除しますか？`)) return;
+  URL.revokeObjectURL(images[vw.i].url); images.splice(vw.i, 1); vw.rot = 0;
+  renderThumbs();
+  if (!images.length) return $("#viewer").close();
+  vw.i = Math.min(vw.i, images.length - 1); showViewer();
+};
+$("#vwClose").onclick = async () => { await leaveViewerImage(); $("#viewer").close(); };
+$("#viewer").addEventListener("cancel", async (e) => { e.preventDefault(); await leaveViewerImage(); $("#viewer").close(); });
+$("#viewer").addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") moveViewer(-1);
+  if (e.key === "ArrowRight") moveViewer(1);
+});
+// スワイプでも移動（左右に50px以上）
+let touchX = null;
+$("#vwStage").addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+$("#vwStage").addEventListener("touchend", (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX; touchX = null;
+  if (Math.abs(dx) > 50) moveViewer(dx < 0 ? 1 : -1);
+});
+window.addEventListener("resize", () => { if ($("#viewer").open) applyRot(); });
 
 let busy = false;
 function updateUI() {
