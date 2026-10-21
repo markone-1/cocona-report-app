@@ -76,7 +76,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-c</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">版 10/21-d</small></h1>
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
@@ -152,9 +152,9 @@
     <ul class="steps" id="steps">
       <li data-k="pdf">PDF化</li>
       <li data-k="up">送信</li>
-      <li data-k="run">OCR・Excel作成（GitHub）</li>
+      <li data-k="run">OCR・日報作成</li>
       <li data-k="down">結果の受信</li>
-      <li data-k="clean">GitHubから削除</li>
+      <li data-k="clean">送信データ削除</li>
     </ul>
     <p id="errMsg" class="hidden"></p>
   </div>
@@ -228,7 +228,7 @@ function gh(path, opt = {}) {
     x.onload = () => {
       if (x.status >= 200 && x.status < 300) return resolve(x.status === 204 || !x.responseText ? null : JSON.parse(x.responseText));
       if (opt.allow404 && x.status === 404) return resolve(null);
-      reject(new Error(`GitHub ${x.status}: ${(x.responseText || "").slice(0, 160)}`));
+      reject(new Error(`サーバーエラー ${x.status}:${(x.responseText || "").slice(0, 160)}`));
     };
     x.ontimeout = () => reject(new Error("通信が応答しません（電波・Wi-Fiを確認）"));
     x.onerror = () => reject(new Error("通信できません（電波・Wi-Fi・設定を確認）"));
@@ -409,14 +409,14 @@ $("#send").onclick = async () => {
       await sleep(5000);
       const sec = Math.round((Date.now() - r0) / 1000);
       if (sec > 25 * 60) throw new Error("時間切れ（25分）");
-      prog.set(35 + 55 * (1 - Math.exp(-sec / 90)), "OCR・Excel作成中…", run ? "GitHubで処理しています" : "GitHubの起動を待っています");
+      prog.set(35 + 55 * (1 - Math.exp(-sec / 90)), "OCR・日報作成中…", run ? "処理しています" : "処理の開始を待っています");
       const rs = await gh(`/actions/workflows/${WORKFLOW}/runs?branch=${encodeURIComponent(branch)}&per_page=5`);
       run = rs.workflow_runs[0];
       if (!run) continue;
       runId = run.id;
       if (run.status === "completed") break;
     }
-    if (run.conclusion !== "success") throw new Error(`GitHubでの処理に失敗しました（${run.conclusion}）。\nGitHub の Actions 画面で失敗した手順名を確認してください。`);
+    if (run.conclusion !== "success") throw new Error(`OCR・日報作成に失敗しました（${run.conclusion}）。\nしばらくしてからもう一度送信してください。続く場合は管理者に連絡してください。`);
 
     // 4) 結果の受信（90〜97%）
     prog.step("down");
@@ -433,9 +433,9 @@ $("#send").onclick = async () => {
     result = { xlsxName, xlsx: await get(xlsF.sha), ymd: xlsxName.slice(0, 8) };
     prog.set(97, "結果を受信しました", "");
 
-    // 5) GitHub から削除（97〜100%）
+    // 5) 送信データ削除（97〜100%）
     prog.step("clean");
-    prog.set(97, "GitHubから今回のデータを削除中…", "");
+    prog.set(97, "送信データを削除中…", "");
     await cleanup(jobId, runId);
 
     // 結果表示＋Excelを自動保存
@@ -450,8 +450,8 @@ $("#send").onclick = async () => {
     let msg = e.message;
     // 失敗時は送信データ（ブランチ）だけ消し、実行記録は原因調査用に残す（ログに顧客データは出ない）
     if (sent) {
-      try { await cleanup(jobId, null); msg += "\n\nGitHub の今回の送信データは削除しました。"; }
-      catch { msg += "\n\nGitHub の削除にも失敗しました。設定の「GitHubに残った古いジョブを削除」を押してください。"; }
+      try { await cleanup(jobId, null); msg += "\n\n今回の送信データは削除しました。"; }
+      catch { msg += "\n\n送信データの削除にも失敗しました。右上の歯車の設定から「古いジョブを削除」を押してください。"; }
     }
     prog.finish(false, msg);
   } finally {
