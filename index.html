@@ -105,6 +105,7 @@
   <section class="card">
     <h2>2. ファイル送信</h2>
     <button id="send" class="primary big" disabled>ファイル送信</button>
+    <p class="warn" id="sendWhy" style="margin:8px 0 0"></p>
     <p class="muted">選んだ画像を1つのPDFにまとめて送信し、OCRしてExcelを作成します。1〜3分ほどかかります。終わるまでこの画面を開いたままにしてください。</p>
   </section>
 
@@ -170,22 +171,30 @@ const WORKFLOW = "report.yml";
 const $ = (s) => document.querySelector(s);
 
 // ── 設定（localStorage は使えない環境もあるので try/catch） ──
+// localStorage が使えない環境（シークレットモード等）でも、開いている間はメモリに保持して動かす
+const mem = {};
+let storageOk = true;
 const store = {
-  get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
-  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  get(k) { try { const v = localStorage.getItem(k); if (v !== null) return v; } catch { storageOk = false; } return mem[k] || ""; },
+  set(k, v) { mem[k] = v; try { localStorage.setItem(k, v); if (localStorage.getItem(k) !== v) storageOk = false; } catch { storageOk = false; } },
 };
+const DEFAULT_REPO = "markone-1/cocona-report";
 function cfg() { return { repo: store.get("repo"), token: store.get("token") }; }
 function cfgOk() { const c = cfg(); return !!(c.repo && c.token); }
 function openSettings() {
-  const c = cfg(); $("#repo").value = c.repo; $("#token").value = c.token;
+  const c = cfg(); $("#repo").value = c.repo || DEFAULT_REPO; $("#token").value = c.token;
   $("#settingsDlg").showModal();
 }
 $("#openSettings").onclick = openSettings;
 $("#closeSettings").onclick = $("#cancelCfg").onclick = () => $("#settingsDlg").close();
 $("#saveCfg").onclick = () => {
-  store.set("repo", $("#repo").value.trim());
-  store.set("token", $("#token").value.trim());
+  const repo = $("#repo").value.trim(), token = $("#token").value.trim();
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return alert("処理用リポジトリは「ユーザー名/リポジトリ名」の形で入力してください");
+  if (!token) return alert("GitHub アクセストークンを入力してください");
+  store.set("repo", repo);
+  store.set("token", token);
   $("#settingsDlg").close();
+  if (!storageOk) alert("このブラウザでは設定を保存できません（シークレットモード等）。\n画面を開いている間だけ有効です。通常のChromeで開き直すと保存されます。");
   updateUI();
 };
 
@@ -266,6 +275,11 @@ let busy = false;
 function updateUI() {
   $("#send").disabled = busy || !images.length || !cfgOk();
   $("#needCfg").classList.toggle("hidden", cfgOk());
+  // ボタンが押せない理由をボタンの下に出す
+  const c = cfg();
+  $("#sendWhy").textContent = busy ? "" : !c.repo ? "※ 右上の歯車から「処理用リポジトリ」を入力して保存してください"
+    : !c.token ? "※ 右上の歯車から「GitHub アクセストークン」を入力して保存してください"
+    : !images.length ? "※ 先に画像を選んでください" : "";
 }
 
 // ── PDF化（1枚＝1ページ、画像の解像度そのまま） ──
