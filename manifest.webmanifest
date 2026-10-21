@@ -1,0 +1,13 @@
+{
+  "name": "作業日報OCR",
+  "short_name": "作業日報OCR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e8eaed",
+  "theme_color": "#e8eaed",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
