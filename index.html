@@ -15,6 +15,7 @@
     --bg: #f4f6f9; --card: #ffffff; --ink: #1f2933; --sub: #616e7c; --line: #d9dee5;
     --accent: #0b63c5; --accent-ink: #ffffff; --ok: #1e7b3c; --warn: #9a5b00; --err: #b42318;
     --track: #e4e8ee; --shade: rgba(15, 23, 42, .45); --line-strong: #8f99a5;
+    --maxw: 720px; /* メイン画面の最大横幅（タブレットで横いっぱいに広がらないように） */
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #14181d; --card: #1d232b; --ink: #e6e9ed; --sub: #9aa5b1; --line: #33404d;
@@ -25,7 +26,7 @@
   body { margin: 0; background: var(--bg); color: var(--ink);
     font: 16px/1.6 system-ui, "Noto Sans JP", sans-serif; }
   header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); }
-  header .in { max-width: 760px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  header .in { max-width: var(--maxw); margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
   header h1 { font-size: 1.2rem; margin: 0; }
   .icon-btn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
   .icon-btn svg { width: 24px; height: 24px; }
@@ -34,7 +35,8 @@
   label.btn[for=cam], label.btn[for=pick], #clearImgs { border-width: 2px; border-color: var(--line-strong); }
   .quit-screen { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; text-align: center; padding: 24px; }
   .quit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  main { max-width: var(--maxw); margin: 0 auto; padding: 16px; }
+  #imgCount { font-size: 1rem; color: var(--ink); margin: 12px 0 0; } /* 上のボタンと同じ文字の大きさ */
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -127,7 +129,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-e</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-f</small></h1>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
