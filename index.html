@@ -29,6 +29,9 @@
   header h1 { font-size: 1.2rem; margin: 0; }
   .icon-btn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
   .icon-btn svg { width: 24px; height: 24px; }
+  .quit-btn { padding: 8px 16px; border-color: var(--err); color: var(--err); font-weight: 600; }
+  .quit-screen { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; text-align: center; padding: 24px; }
+  .quit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; }
   main { max-width: 760px; margin: 0 auto; padding: 16px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
@@ -122,15 +125,28 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-b</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-c</small></h1>
+    <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
     </button>
+    <button id="quitApp" class="quit-btn">終了</button>
+    </div>
   </div>
 </header>
+
+<!-- 終了後の画面 -->
+<div id="quitScreen" class="quit-screen hidden">
+  <div>
+    <p class="quit-title">終了しました</p>
+    <p class="muted" id="quitMsg"></p>
+    <p class="muted">この画面を閉じてください。</p>
+    <button id="restartApp" class="primary">もう一度使う</button>
+  </div>
+</div>
 
 <main>
 
@@ -728,6 +744,55 @@ $("#cleanAll").onclick = async () => {
     alert(`ブランチ ${refs.length} 件・実行記録 ${n} 件を削除しました`);
   } catch (e) { alert("削除に失敗: " + e.message); }
 };
+
+// ── 終了：送信データ（job/ブランチ）と実行記録をすべて削除してアプリを止める ──
+// 他のタブレットが処理中のジョブ（未完了の実行とそのブランチ）だけは壊さないよう残す
+async function purgeAll() {
+  const runs = [];
+  for (let page = 1; page <= 5; page++) {
+    const r = await gh(`/actions/runs?per_page=100&page=${page}`);
+    runs.push(...r.workflow_runs);
+    if (r.workflow_runs.length < 100) break;
+  }
+  const active = new Set(runs.filter((r) => r.status !== "completed").map((r) => r.head_branch));
+  const refs = (await gh(`/git/matching-refs/heads/job/`)) || [];
+  let nb = 0, nr = 0;
+  for (const r of refs) {
+    if (active.has(r.ref.replace("refs/heads/", ""))) continue;
+    await gh(`/git/${r.ref}`, { method: "DELETE", allow404: true }); nb++;
+  }
+  for (const r of runs) {
+    if (r.status !== "completed") continue;
+    await gh(`/actions/runs/${r.id}`, { method: "DELETE", allow404: true }); nr++;
+  }
+  return { nb, nr, kept: active.size };
+}
+function stopApp(msg) {
+  // 画面上の画像・結果を破棄（設定は残す）
+  images.forEach((im) => URL.revokeObjectURL(im.url)); images = []; renderThumbs();
+  result = null; pdfData = null; $("#resultBox").classList.add("hidden");
+  document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+  $("#quitMsg").textContent = msg;
+  $("#quitScreen").classList.remove("hidden");
+  try { window.close(); } catch {} // ホーム画面から開いたアプリ等、閉じられる場合は閉じる
+}
+$("#quitApp").onclick = async () => {
+  if (busy) return alert("ファイル送信の処理中は終了できません。処理が終わってから押してください。");
+  if (!confirm("アプリを終了しますか？\n送信データと処理の記録をすべて削除します。")) return;
+  const btn = $("#quitApp"); btn.disabled = true; btn.textContent = "削除中…";
+  let msg = "";
+  try {
+    if (cfgOk()) {
+      const r = await purgeAll();
+      msg = `送信データ ${r.nb} 件・処理の記録 ${r.nr} 件を削除しました。` + (r.kept ? `（他の端末で処理中の ${r.kept} 件は残しました）` : "");
+    } else msg = "設定が未入力のため、データの削除は行いませんでした。";
+  } catch (e) {
+    msg = "データの削除に失敗しました（" + e.message + "）。もう一度使うを押してから、終了をやり直してください。";
+  }
+  btn.disabled = false; btn.textContent = "終了";
+  stopApp(msg);
+};
+$("#restartApp").onclick = () => location.reload();
 
 // ── ファイル送信（PDF化 → 送信 → GitHubでOCR・Excel作成 → 受信 → 削除） ──
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
