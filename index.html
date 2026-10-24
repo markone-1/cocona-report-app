@@ -29,7 +29,9 @@
   header h1 { font-size: 1.2rem; margin: 0; }
   .icon-btn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
   .icon-btn svg { width: 24px; height: 24px; }
-  .quit-btn { padding: 8px 16px; border-color: var(--err); color: var(--err); font-weight: 600; }
+  .quit-btn { padding: 8px 16px; border: 2px solid var(--err); color: var(--err); font-weight: 600; }
+  /* 撮影・選択・クリアのボタンは外枠を1段太く */
+  label.btn[for=cam], label.btn[for=pick], #clearImgs { border-width: 2px; }
   .quit-screen { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; text-align: center; padding: 24px; }
   .quit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; }
   main { max-width: 760px; margin: 0 auto; padding: 16px; }
@@ -125,7 +127,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-c</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-d</small></h1>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
