@@ -14,12 +14,12 @@
   :root {
     --bg: #f4f6f9; --card: #ffffff; --ink: #1f2933; --sub: #616e7c; --line: #d9dee5;
     --accent: #0b63c5; --accent-ink: #ffffff; --ok: #1e7b3c; --warn: #9a5b00; --err: #b42318;
-    --track: #e4e8ee; --shade: rgba(15, 23, 42, .45);
+    --track: #e4e8ee; --shade: rgba(15, 23, 42, .45); --line-strong: #8f99a5;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #14181d; --card: #1d232b; --ink: #e6e9ed; --sub: #9aa5b1; --line: #33404d;
       --accent: #4c9bf0; --accent-ink: #0b1220; --ok: #5cc27e; --warn: #e3a83c; --err: #f07167;
-      --track: #2b3440; --shade: rgba(0, 0, 0, .6); }
+      --track: #2b3440; --shade: rgba(0, 0, 0, .6); --line-strong: #7a8796; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -31,7 +31,7 @@
   .icon-btn svg { width: 24px; height: 24px; }
   .quit-btn { padding: 8px 16px; border: 2px solid var(--err); color: var(--err); font-weight: 600; }
   /* 撮影・選択・クリアのボタンは外枠を1段太く */
-  label.btn[for=cam], label.btn[for=pick], #clearImgs { border-width: 2px; }
+  label.btn[for=cam], label.btn[for=pick], #clearImgs { border-width: 2px; border-color: var(--line-strong); }
   .quit-screen { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; text-align: center; padding: 24px; }
   .quit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; }
   main { max-width: 760px; margin: 0 auto; padding: 16px; }
@@ -127,7 +127,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-d</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-e</small></h1>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
