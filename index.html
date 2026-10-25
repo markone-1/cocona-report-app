@@ -129,7 +129,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-g</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-h</small></h1>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -180,7 +180,9 @@
     <ul id="warnList" class="warn"></ul>
     <div class="row">
       <button id="saveXlsx" class="primary">Excelを保存</button>
+      <button id="openXlsx">Excelを開く</button>
       <button id="savePdf">PDFを保存</button>
+      <button id="openPdf">PDFを開く</button>
     </div>
   </section>
 </main>
@@ -724,6 +726,26 @@ function download(name, u8, type) {
 const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 $("#saveXlsx").onclick = () => result && download(result.xlsxName, result.xlsx, XLSX_TYPE);
 $("#savePdf").onclick = () => result && pdfData && download(`${result.ymd}.pdf`, pdfData, "application/pdf");
+
+// 開く：タブレットでは共有メニューから開くアプリ（Excel・スプレッドシート・PDFビューア等）を選ぶ。
+// 共有に対応していないブラウザ（PC等）では新しいタブで開く（Excel はブラウザで表示できないためダウンロード扱いになる）
+async function openFile(name, u8, type) {
+  const file = new File([u8], name, { type });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      return;
+    }
+  } catch (e) {
+    if (e.name === "AbortError") return; // 共有メニューを閉じただけ
+  }
+  const url = URL.createObjectURL(file);
+  const w = window.open(url, "_blank");
+  if (!w) download(name, u8, type); // ポップアップが止められたら保存にする
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+$("#openXlsx").onclick = () => result && openFile(result.xlsxName, result.xlsx, XLSX_TYPE);
+$("#openPdf").onclick = () => result && pdfData && openFile(`${result.ymd}.pdf`, pdfData, "application/pdf");
 
 // ── GitHubの後片付け（ブランチ＋実行記録） ──
 async function cleanup(jobId, runId) {
