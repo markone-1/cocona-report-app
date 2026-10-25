@@ -32,7 +32,8 @@
   .icon-btn svg { width: 24px; height: 24px; }
   .quit-btn { padding: 8px 16px; border: 2px solid var(--err); color: var(--err); font-weight: 600; }
   /* 撮影・選択・クリアのボタンは外枠を1段太く */
-  label.btn[for=cam], label.btn[for=pick], #clearImgs { border-width: 2px; border-color: var(--line-strong); }
+  label.btn[for=cam], label.btn[for=pick], #clearImgs, .btn-strong { border-width: 2px; border-color: var(--line-strong); }
+  .btn-ok { background: #1e7b3c; border-color: #1e7b3c; color: #fff; font-weight: 600; }
   .quit-screen { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; text-align: center; padding: 24px; }
   .quit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 8px; }
   main { max-width: var(--maxw); margin: 0 auto; padding: 16px; }
@@ -129,7 +130,7 @@
 <body>
 <header>
   <div class="in">
-    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-h</small></h1>
+    <h1>作業日報OCR <small class="muted" style="font-weight:400;font-size:.75rem">Ver 10/25-i</small></h1>
     <div class="row" style="align-items:center;gap:8px;flex-wrap:nowrap">
     <button class="icon-btn" id="openSettings" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -180,10 +181,10 @@
     <ul id="warnList" class="warn"></ul>
     <div class="row">
       <button id="saveXlsx" class="primary">Excelを保存</button>
-      <button id="openXlsx">Excelを開く</button>
-      <button id="savePdf">PDFを保存</button>
-      <button id="openPdf">PDFを開く</button>
+      <button id="savePdf" class="btn-strong">PDFを保存</button>
+      <button id="openFolder" class="btn-ok" style="margin-left:auto">フォルダを開く</button>
     </div>
+    <p class="muted" id="folderHint" style="margin:8px 0 0">保存先：ダウンロードフォルダ</p>
   </section>
 </main>
 
@@ -727,25 +728,16 @@ const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 $("#saveXlsx").onclick = () => result && download(result.xlsxName, result.xlsx, XLSX_TYPE);
 $("#savePdf").onclick = () => result && pdfData && download(`${result.ymd}.pdf`, pdfData, "application/pdf");
 
-// 開く：タブレットでは共有メニューから開くアプリ（Excel・スプレッドシート・PDFビューア等）を選ぶ。
-// 共有に対応していないブラウザ（PC等）では新しいタブで開く（Excel はブラウザで表示できないためダウンロード扱いになる）
-async function openFile(name, u8, type) {
-  const file = new File([u8], name, { type });
-  try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: name });
-      return;
-    }
-  } catch (e) {
-    if (e.name === "AbortError") return; // 共有メニューを閉じただけ
+// フォルダを開く：保存先（ダウンロード）フォルダを開く。
+// Android の Chrome では「ダウンロード」アプリを起動する。PC 等のブラウザは仕組み上フォルダを開けないので案内を出す
+const isAndroid = /Android/i.test(navigator.userAgent);
+$("#openFolder").onclick = () => {
+  if (isAndroid) {
+    location.href = "intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end";
+  } else {
+    alert("このブラウザではフォルダを直接開けません。\nブラウザのダウンロード一覧（Ctrl+J）から保存したファイルを開いてください。");
   }
-  const url = URL.createObjectURL(file);
-  const w = window.open(url, "_blank");
-  if (!w) download(name, u8, type); // ポップアップが止められたら保存にする
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
-$("#openXlsx").onclick = () => result && openFile(result.xlsxName, result.xlsx, XLSX_TYPE);
-$("#openPdf").onclick = () => result && pdfData && openFile(`${result.ymd}.pdf`, pdfData, "application/pdf");
+};
 
 // ── GitHubの後片付け（ブランチ＋実行記録） ──
 async function cleanup(jobId, runId) {
@@ -883,8 +875,9 @@ $("#send").onclick = async () => {
     const xlsF = files.find((x) => x.path.endsWith(".xlsx"));
     if (!resF || !xlsF) throw new Error("結果ファイルが見つかりません");
     const res = JSON.parse(new TextDecoder().decode(await get(resF.sha)));
-    const xlsxName = xlsF.path.slice(4);
-    result = { xlsxName, xlsx: await get(xlsF.sha), ymd: xlsxName.slice(0, 8) };
+    const ymd = xlsF.path.slice(4, 12);
+    const xlsxName = `作業日報_${ymd}.xlsx`; // 保存するファイル名
+    result = { xlsxName, xlsx: await get(xlsF.sha), ymd };
     prog.set(97, "結果を受信しました", "");
 
     // 5) 送信データ削除（97〜100%）
